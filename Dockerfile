@@ -1,15 +1,6 @@
-# syntax = docker/dockerfile:1
+FROM node:18-slim
 
-# Adjust NODE_VERSION as desired
-ARG NODE_VERSION=20.18.0
-FROM node:${NODE_VERSION}-slim AS base
-
-LABEL fly_launch_runtime="Node.js"
-
-# Node.js app lives here
-WORKDIR /app
-
-# Install Playwright dependencies
+# Install Playwright system dependencies
 RUN apt-get update && apt-get install -y \
     libnss3 \
     libnspr4 \
@@ -27,33 +18,52 @@ RUN apt-get update && apt-get install -y \
     libasound2 \
     libatspi2.0-0 \
     libxshmfence1 \
+    libglib2.0-0 \
+    libnss3 \
+    libnspr4 \
+    libdbus-1-3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxcb1 \
+    libxkbcommon0 \
+    libx11-6 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    libatspi2.0-0 \
+    libxshmfence1 \
+    fonts-liberation \
+    fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
-    
-# Set production environment
-ENV NODE_ENV="production"
 
+WORKDIR /app
 
-# Throw-away build stage to reduce size of final image
-FROM base AS build
+# Copy package files
+COPY package*.json ./
 
-# Install packages needed to build node modules
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
+# Install dependencies
+RUN npm ci --only=production
 
-# Install node modules
-COPY package.json ./
-RUN npm install
+# Install Playwright browsers and dependencies
+# This ensures browsers are installed in the correct location
+RUN npx playwright install --with-deps chromium
 
 # Copy application code
 COPY . .
 
-
-# Final stage for app image
-FROM base
-
-# Copy built application
-COPY --from=build /app /app
-
-# Start the server by default, this can be overwritten at runtime
+# Expose the port
 EXPOSE 3000
-CMD [ "npm", "run", "start" ]
+
+# Set environment variables for Playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
+
+# Start the application
+CMD ["node", "server.js"]
