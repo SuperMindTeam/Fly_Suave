@@ -337,12 +337,13 @@ async function searchDenticonPatient(officeName, patientDoB, firstName, lastName
 
   const browser = await chromium.launch({
     headless: true,
-    executablePath: '/ms-playwright/chromium-1194/chrome-linux/chrome',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-gpu'
+      '--disable-gpu',
+      '--disable-blink-features=AutomationControlled',
+      '--disable-web-security'
     ]
   });
 
@@ -565,6 +566,7 @@ export { searchDenticonPatient };
 
 
 //const a = await searchDenticonPatient("Suave Dental Livingston [105] ", "02/10/1921", "Lisa", "Chaney").then(console.log);  //zero results
+
 
 
 
